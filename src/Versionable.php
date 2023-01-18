@@ -20,14 +20,25 @@ use Illuminate\Support\Carbon;
  */
 trait Versionable
 {
+
     public static function bootVersionable(): void
     {
         static::updating(function (Model $model) {
+            $changed = array_keys($model->getDirty());
+            if (property_exists($model, 'dont_version') && count(array_diff($changed, $model->dont_version)) === 0) {
+                return true;
+            }
+
             /** @var Model $new_model_version */
             $new_model_version = $model->replicate(['updated_at']);
             $new_model_version->created_at = Carbon::now();
-            if ($model instanceof VersionableInterface && $model->onNewVersionCreate($new_model_version) === false) {
-                return;
+            if ($model instanceof VersionableInterface && $model->onNewVersionCreate($new_model_version, $model) === false) {
+                return true;
+            }
+
+            // for projections
+            if (method_exists($model, 'writeable')) {
+                $new_model_version = $new_model_version->writeable();
             }
 
             $new_model_version->save();

@@ -31,6 +31,9 @@ use CapeAndBay\Versionable\Versionable;
 class Post extends Model
 {
     use Versionable;
+
+    # Prevents versioning Post if only the "is_active" column is updated.
+    protected array $dont_version = ['is_active'];
 }
 ```
 
